@@ -88,16 +88,52 @@ total_hours = serializers.DecimalField(
 
 ## After
 
-*(fill this in from the toolbar once the fix is in)*
-
-**Header:**
+**Header:** `5 queries` — 0 similar
 
 | # | Query | Note |
 |---|---|---|
-| | | |
+| 1 | `SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED` | connection setup |
+| 2 | `SELECT ... FROM django_session WHERE session_key = ...` | auth overhead |
+| 3 | `SELECT ... FROM auth_user WHERE id = 1` | auth overhead |
+| 4 | `SELECT ... FROM tracker_game LEFT OUTER JOIN tracker_gamesession ... GROUP BY ...` | games **+ the total, in one query** |
+| 5 | `SELECT ... FROM tracker_genre INNER JOIN tracker_game_genres ... WHERE game_id IN (1, 2, 3)` | the prefetch |
 
-Expected: 4 overhead + 1 games (now with LEFT JOIN + GROUP BY) + 1 genre prefetch
-= **6 queries, 0 similar** — and flat regardless of how many games exist.
+**11 → 5.** Both loops gone.
+
+### The two cure signatures
+
+Loop B folded into the main query — no extra query at all:
+
+```sql
+FROM `tracker_game`
+LEFT OUTER JOIN `tracker_gamesession` ON (`tracker_game`.`id` = `tracker_gamesession`.`game_id`)
+GROUP BY `tracker_game`.`id`, COALESCE(`tracker_game`.`untracked_hours`, 0)
+ORDER BY NULL
+```
+
+`LEFT OUTER JOIN`, not inner — games with no sessions must still appear.
+(`ORDER BY NULL` is Django suppressing MySQL's implicit `GROUP BY` sort. Not ours.)
+
+Loop A batched into one:
+
+```sql
+WHERE `tracker_game_genres`.`game_id` IN (1, 2, 3)
+```
+
+`IN (...)` where there used to be three separate `= 1`, `= 2`, `= 3`.
+
+### Flat now
+
+Add 500 games and it's still 5 queries. The `IN` list gets longer; the count
+doesn't move.
+
+### Ignore the timings
+
+Total went **up** — 2.70ms before, 40.43ms after. Cold caches, and `auth_user`
+alone took 9.79ms this run. At three rows, milliseconds are noise.
+
+The shape was optimised, not this particular measurement. Query count is the
+signal.
 
 ---
 

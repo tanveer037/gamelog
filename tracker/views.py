@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -10,6 +9,6 @@ def index(request):
 
 @api_view(['GET'])
 def games(request):
-    games = Game.objects.all()
+    games = Game.objects.prefetch_related('genres').with_hours()
     serializer = GameSerializer(games, many=True)
     return Response(serializer.data)

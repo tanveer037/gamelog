@@ -1,8 +1,8 @@
-from functools import cached_property
-
+from decimal import Decimal
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.db.models import Sum
+from django.db.models import Sum, F, Value
+from django.db.models.functions import Coalesce
 
 # Create your models here.
 
@@ -22,7 +22,15 @@ class Genre(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
-        return self.name        
+        return self.name
+
+
+class GameQuerySet(models.QuerySet):
+    def with_hours(self):
+        return self.annotate(
+            total_playtime=Coalesce(Sum('sessions__duration_hours'), Value(Decimal(0)))
+            + Coalesce(F('untracked_hours'), Value(Decimal(0)))
+        )
 
 class Game(models.Model):
     title = models.CharField(max_length=255)
@@ -32,11 +40,7 @@ class Game(models.Model):
     platform = models.ForeignKey(Platform, on_delete=models.PROTECT, related_name='games')
     genres = models.ManyToManyField(Genre, related_name='games', blank=True)
     untracked_hours = models.DecimalField(max_digits=7, decimal_places=2, null = True, blank = True)
-
-    @cached_property
-    def total_hours(self):
-        logged = self.sessions.aggregate(t=Sum('duration_hours'))['t'] or 0
-        return logged + (self.untracked_hours or 0)
+    objects = GameQuerySet.as_manager()
 
     def __str__(self):
         return self.title
