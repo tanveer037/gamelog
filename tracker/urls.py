@@ -1,9 +1,9 @@
-from django.urls import path
+from rest_framework.routers import DefaultRouter
+
 from . import views
 
-urlpatterns = [
-    path('index/', views.index, name='index'),
-    path('games/', views.GameList.as_view(), name='games'),
-    path('sessions/', views.SessionList.as_view(), name='sessions'),
-    path('games/<int:pk>/', views.GameDetail.as_view(), name='game_detail'),
-]    
+router = DefaultRouter()
+router.register('games', views.GameViewSet)
+router.register('sessions', views.SessionViewSet, basename='sessions')
+
+urlpatterns = router.urls
