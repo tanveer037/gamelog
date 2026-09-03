@@ -1,4 +1,4 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from .models import Game, GameSession
 from .serializers import GameSerializer, GameSessionSerializer
 
@@ -21,3 +21,13 @@ class GameViewSet(ModelViewSet):
 class SessionViewSet(ModelViewSet):
     queryset = GameSession.objects.select_related('game').order_by('-played_on')
     serializer_class = GameSessionSerializer
+
+
+class NestedSessionViewSet(ReadOnlyModelViewSet):
+    serializer_class = GameSessionSerializer
+
+    def get_queryset(self):
+        return (GameSession.objects
+                .filter(game_id=self.kwargs['game_pk'])
+                .select_related('game')
+                .order_by('-played_on'))       
