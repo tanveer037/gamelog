@@ -1,14 +1,19 @@
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from .models import Game, GameSession, JournalEntry
 from .serializers import GameSerializer, GameSessionSerializer, JournalEntrySerializer
+from .filters import GameFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 from django.shortcuts import get_object_or_404
 
 
 class GameViewSet(ModelViewSet):
     queryset = Game.objects.prefetch_related('genres').with_hours()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['genres', 'status', 'platform']
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = GameFilter
+    search_fields = ['title']
+    ordering_fields = ['title', 'added_on', 'rating', 'total_playtime']
+    ordering = ['title']
 
     serializer_class = GameSerializer
 
