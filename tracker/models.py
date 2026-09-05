@@ -45,10 +45,24 @@ class Game(models.Model):
     def __str__(self):
         return self.title
 
+class JournalEntry(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='journal')
+    written_on = models.DateField()
+    body = models.TextField()
+
+    class Meta:
+        ordering = ['-written_on']
+
+    def __str__(self):
+        return f"{self.game.title} - {self.written_on}"
+
 class GameSession(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='sessions')
     played_on = models.DateField(auto_now_add=False)
     duration_hours = models.DecimalField(max_digits=4, decimal_places=2, validators=[MinValueValidator(0)])
+
+    class Meta:
+        ordering = ['-played_on']
 
     def __str__(self):
         return f"{self.game.title} - {self.played_on} ({self.duration_hours} hours)"

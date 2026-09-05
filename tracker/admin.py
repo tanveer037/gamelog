@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Game, Platform, Genre, GameSession
+from django.utils.text import Truncator
+from .models import Game, Platform, Genre, GameSession, JournalEntry
 
 
 @admin.register(Game)
@@ -23,10 +24,24 @@ class GameAdmin(admin.ModelAdmin):
 
 @admin.register(GameSession)
 class GameSessionAdmin(admin.ModelAdmin):
-    list_display = ['game', 'played_on', 'duration_hours']
+    list_display = ['id', 'game', 'played_on', 'duration_hours']
     list_filter = ['played_on', 'game']
-    ordering = ['-played_on']
+    search_fields = ['game__title']
     list_select_related = ['game']
+    autocomplete_fields = ['game']
+
+
+@admin.register(JournalEntry)
+class JournalEntryAdmin(admin.ModelAdmin):
+    list_display = ['id', 'game', 'written_on', 'excerpt']
+    list_filter = ['written_on', 'game']
+    search_fields = ['body', 'game__title']
+    list_select_related = ['game']
+    autocomplete_fields = ['game']
+
+    @admin.display(description='Entry')
+    def excerpt(self, entry):
+        return Truncator(entry.body).chars(80)
 
 
 @admin.register(Platform)
