@@ -8,9 +8,15 @@ django = "*"
 djangorestframework = "*"
 mysqlclient = "*"
 python-dotenv = "*"
+drf-nested-routers = "*"
+django-filter = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
+pytest = "*"
+pytest-django = "*"
+model-bakery = "*"
+pytest-watch = "*"
 
 [requires]
 python_version = "3.13"
